@@ -1,82 +1,93 @@
-import heapq
+Graph_nodes = {
+    'A': [('B', 6), ('F', 3)],
+    'B': [('C', 3), ('D', 2)],
+    'C': [('D', 1), ('E', 5)],
+    'D': [('C', 1), ('E', 8)],
+    'E': [('I', 5), ('J', 5)],
+    'F': [('G', 1), ('H', 7)],
+    'G': [('I', 3)],
+    'H': [('I', 2)],
+    'I': [('E', 5), ('J', 3)],
 
-class Node:
-    def __init__(self, position=None, parent=None):
-        self.position = position
-        self.parent = parent
-        self.g = 0  # Distance from start node
-        self.h = 0  # Heuristic - estimated distance to goal
-        self.f = 0  # Total cost (g + h)
+}
 
-    def __eq__(self, other):
-        return self.position == other.position
 
-    def __lt__(self, other):
-        return self.f < other.f
+def get_neighbors(v):
+    if v in Graph_nodes:
+        return Graph_nodes[v]
+    else:
+        return None
 
-def astar(maze, start, end):
-    start_node = Node(start, None)
-    end_node = Node(end, None)
 
-    open_list = []
-    closed_list = set()
+def h(n):
+    H_dist = {
+        'A': 10,
+        'B': 8,
+        'C': 5,
+        'D': 7,
+        'E': 3,
+        'F': 6,
+        'G': 5,
+        'H': 3,
+        'I': 1,
+        'J': 0
+    }
+    return H_dist[n]
 
-    heapq.heappush(open_list, start_node)
 
-    while open_list:
-        current_node = heapq.heappop(open_list)
-        closed_list.add(current_node.position)
+def aStarAlgo(start_node, stop_node):
+    open_set = set(start_node)
+    closed_set = set()
+    g = {}
+    parents = {}
+    g[start_node] = 0
+    parents[start_node] = start_node
 
-        # Check if the goal is reached
-        if current_node == end_node:
+    while len(open_set) > 0:
+        n = None
+
+        for v in open_set:
+            if n == None or g[v] + h(v) < g[n] + h(n):
+                n = v
+
+        if n == stop_node or Graph_nodes[n] == None:
+            pass
+        else:
+            for (m, weight) in get_neighbors(n):
+                if m not in open_set and m not in closed_set:
+                    open_set.add(m)
+                    parents[m] = n
+                    g[m] = g[n] + weight
+
+                else:
+                    if g[m] > g[n] + weight:
+                        g[m] = g[n] + weight
+                        parents[m] = n
+                        if m in closed_set:
+                            closed_set.remove(m)
+                            open_set.add(m)
+
+        if n == None:
+            print('Path does not exist!')
+            return None
+        if n == stop_node:
             path = []
-            while current_node:
-                path.append(current_node.position)
-                current_node = current_node.parent
-            return path[::-1]  # Return the reversed path
 
-        # Generate children
-        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0)]:  # Adjacent squares (up, down, left, right)
-            node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
+            while parents[n] != n:
+                path.append(n)
+                n = parents[n]
 
-            if node_position[0] < 0 or node_position[0] >= len(maze) or node_position[1] < 0 or node_position[1] >= len(maze[0]):
-                continue  # Skip out of bounds positions
+            path.append(start_node)
 
-            if maze[node_position[0]][node_position[1]] != 0:
-                continue  # Skip obstacles (non-walkable cells)
+            path.reverse()
 
-            child = Node(node_position, current_node)
+            print('Path found: {}'.format(path))
+            return path
+        open_set.remove(n)
+        closed_set.add(n)
 
-            if child.position in closed_list:
-                continue
+    print('Path does not exist!')
+    return None
 
-            # Calculate g, h, and f
-            child.g = current_node.g + 1
-            child.h = abs(child.position[0] - end_node.position[0]) + abs(child.position[1] - end_node.position[1])
-            child.f = child.g + child.h
 
-            # Check if child is already in the open list
-            if any(open_node for open_node in open_list if child == open_node and child.g > open_node.g):
-                continue
-
-            heapq.heappush(open_list, child)
-
-    return None  # No path found
-
-# Example usage:
-maze = [
-    [0, 1, 0, 0, 0],
-    [0, 1, 0, 1, 0],
-    [0, 0, 0, 1, 0],
-    [1, 1, 0, 0, 0],
-    [0, 0, 0, 1, 0]
-]
-
-start = (0, 0)
-end = (4, 4)
-
-path = astar(maze, start, end)
-if path:
-    print(f"Path found: {path}")
-else:
-    print("No path found")
+aStarAlgo('A', 'J')
